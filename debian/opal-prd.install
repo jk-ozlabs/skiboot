@@ -1,0 +1,3 @@
+debian/opal-prd.socket		lib/systemd/system/
+debian/opal-prd.service		lib/systemd/system/
+usr/sbin/opal-prd		usr/sbin/

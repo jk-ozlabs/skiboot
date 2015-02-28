@@ -1,0 +1,5 @@
+skiboot (5.0.3-1) utopic; urgency=medium
+
+  * Add debian metadata
+
+ -- Jeremy Kerr <jk@ozlabs.org>  Tue, 10 Mar 2015 15:25:48 +0800

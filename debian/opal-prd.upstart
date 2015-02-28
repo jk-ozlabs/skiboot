@@ -1,0 +1,10 @@
+# opal-prd - OPAL Processor Recovery Diagnostics daemon
+
+description	"OPAL PRD daemon"
+
+start on runlevel [2345]
+stop on runlevel [!2345]
+
+respawn
+
+exec opal-prd --pnor /dev/mtd0

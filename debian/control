@@ -1,0 +1,18 @@
+Source: skiboot
+Section: admin
+Priority: optional
+Maintainer: Jeremy Kerr <jk@ozlabs.org>
+Build-Depends: debhelper (>= 8.0.0)
+Standards-Version: 3.9.4
+Homepage: http://github.com/open-power/skiboot/
+#Vcs-Git: git://git.debian.org/collab-maint/skiboot.git
+#Vcs-Browser: http://git.debian.org/?p=collab-maint/skiboot.git;a=summary
+
+Package: opal-prd
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: OPAL Processor Recovery Diagnostics daemon
+ .
+ This package provides a daemon to load and run the OpenPower firmware's
+ Processor Recovery Diagnostics binary. This is responsible for runtime
+ maintenance of Power hardware.
