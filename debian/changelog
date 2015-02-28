@@ -1,0 +1,5 @@
+skiboot (5.1.0-beta1-10-gad5f80a-1) unstable; urgency=medium
+
+  * Add debian metadata
+
+ -- Jeremy Kerr <jk@ozlabs.org>  Tue, 10 Mar 2015 15:25:48 +0800

@@ -1,0 +1,15 @@
+# Defaults for skiboot initscript
+# sourced by /etc/init.d/skiboot
+# installed at /etc/default/skiboot by the maintainer scripts
+
+#
+# This is a POSIX shell fragment
+#
+
+PNOR_DEVICE=/dev/mtd0
+
+# Additional options that are passed to the Daemon.
+DAEMON_OPTS=""
+
+# Set to true to have the PRD daemon started on boot
+OPAL_PRD_ENABLED=false

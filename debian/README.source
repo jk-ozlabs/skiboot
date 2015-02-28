@@ -1,0 +1,8 @@
+skiboot for Debian
+------------------
+
+This package contains support utilities for the skiboot firmware, for OPAL
+Power machined.
+
+ -- Jeremy Kerr <jk@ozlabs.org>  Sat, 28 Feb 2015 09:20:34 +0800
+
