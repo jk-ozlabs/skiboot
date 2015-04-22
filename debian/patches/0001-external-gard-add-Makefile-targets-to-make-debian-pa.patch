@@ -1,0 +1,44 @@
+From 5f3cfd97cc9304d25c65301c708fa5dd0a5e96c6 Mon Sep 17 00:00:00 2001
+From: Cyril Bur <cyril.bur@au1.ibm.com>
+Date: Thu, 4 Jun 2015 12:03:36 +1000
+Subject: [PATCH] external/gard: add Makefile targets to make debian packages
+
+The Makefile is missing a install target which will be needed to package and
+distribute into ubuntu.
+
+Added a simple install target.
+
+Signed-off-by: Cyril Bur <cyril.bur@au1.ibm.com>
+Signed-off-by: Stewart Smith <stewart@linux.vnet.ibm.com>
+---
+ external/gard/Makefile | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/external/gard/Makefile b/external/gard/Makefile
+index 318501e..4f0400e 100644
+--- a/external/gard/Makefile
++++ b/external/gard/Makefile
+@@ -1,5 +1,8 @@
+ # This tool is a linux userland tool and should be completely stand alone
+ 
++prefix = /usr/local/
++sbindir = $(prefix)/sbin
++
+ CC = $(CROSS_COMPILE)gcc
+ CFLAGS = -m64 -Werror -Wall -g2 -ggdb
+ LDFLAGS = -m64
+@@ -21,6 +24,11 @@ all: $(EXE)
+ $(EXE): $(OBJS)
+ 	$(LINK.o) -o $@ $^
+ 
++install: all
++	install -D gard $(DESTDIR)$(sbindir)/opal-gard
++
+ clean:
+ 	rm -f $(OBJS) $(EXE) *.d
+ 
++distclean: clean
++
+-- 
+1.9.1
+

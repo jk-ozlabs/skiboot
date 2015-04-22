@@ -16,3 +16,11 @@ Description: OPAL Processor Recovery Diagnostics daemon
  This package provides a daemon to load and run the OpenPower firmware's
  Processor Recovery Diagnostics binary. This is responsible for runtime
  maintenance of Power hardware.
+
+Package: opal-utils
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: OPAL firmware utilities
+ .
+ This package contains the 'gard' utility, to read, parse and clear hardware
+ gard partitions on OpenPower platforms.

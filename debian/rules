@@ -9,6 +9,8 @@ export DH_VERBOSE=1
 
 override_dh_auto_build:
 	make -C external/opal-prd/
+	make -C external/gard/
 
 override_dh_auto_install:
 	make -C external/opal-prd/ prefix=/usr DESTDIR=../../debian/tmp/ install
+	make -C external/gard/ prefix=/usr DESTDIR=../../debian/tmp/ install
