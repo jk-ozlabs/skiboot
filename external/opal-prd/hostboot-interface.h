@@ -491,6 +491,21 @@ struct runtime_interfaces {
 	 */
 	int (*run_command)(int argc, const char **argv, char **o_outString);
 
+	/**
+	 * @brief	Query the IPOLL event mask supported by HBRT
+	 *
+	 * @details	This call allows the wrapper application to query
+	 * the ipoll event mask to set when the HBRT instance is running. Bits
+	 * that are *set* in this bitmask represent events that will be
+	 * forwarded to the handle_attn() callback.
+	 *
+	 * If this callback is not provided, the value 0xf000000000000000 will
+	 * be assumed.
+	 *
+	 * @param[out]	the IPOLL event bits to enable during HBRT execution
+	 */
+	uint64_t (*get_ipoll_events)(void);
+
 	/* Reserve some space for future growth. */
-	void (*reserved[29])(void);
+	void (*reserved[28])(void);
 };
