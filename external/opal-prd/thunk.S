@@ -93,6 +93,7 @@ call_##name:					;\
 	CALL_THUNK(apply_attr_override, 12)
 	CALL_THUNK(mfg_htmgt_pass_thru, 13)
 	CALL_THUNK(run_command, 14)
+	CALL_THUNK(get_ipoll_events, 15)
 
 	.globl call_hbrt_init
 call_hbrt_init:
