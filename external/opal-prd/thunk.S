@@ -94,6 +94,7 @@ call_##name:					;\
 	CALL_THUNK(mfg_htmgt_pass_thru, 13)
 	CALL_THUNK(run_command, 14)
 	CALL_THUNK(get_ipoll_events, 15)
+	CALL_THUNK(firmware_notify, 16)
 
 	.globl call_hbrt_init
 call_hbrt_init:
@@ -188,10 +189,11 @@ hinterface:
 	CALLBACK_THUNK(hservice_ipmi_msg)
 	CALLBACK_THUNK(hservice_memory_error)
 	CALLBACK_THUNK(hservice_get_interface_capabilities)
+	CALLBACK_THUNK(hservice_firmware_request)
 .globl __hinterface_pad
 __hinterface_pad:
 	/* Reserved space for future growth */
-	.space 31*8,0
+	.space 30*8,0
 .globl __hinterface_end
 __hinterface_end:
 	/* Eye catcher for debugging */

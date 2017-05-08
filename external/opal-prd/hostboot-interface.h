@@ -299,8 +299,28 @@ struct host_interfaces {
 	 */
 	uint64_t (*get_interface_capabilities)(uint64_t i_set);
 
+	/** 
+	 * @brief Send a request to firmware, and receive a response
+	 *
+	 * req_len bytes are sent to runtime firmware, and resp_len
+	 * bytes received in response.
+	 *
+	 * Both req and resp are allocated by the caller. If resp_len
+	 * is not large enough to contain the full response, an error
+	 * is returned.
+	 *
+	 * @param[in]    req_len	length of request data
+	 * @param[in]    req		request data
+	 * @param[inout] resp_len	in: size of request data buffer
+	 *				out: length of request data
+	 * @param[in]    resp		response data
+	 * @return       zero on success, non-zero on failure
+	 */
+	int (*firmware_request)(uint64_t req_len, void *req,
+				uint64_t *resp_len, void *resp);
+
 	/* Reserve some space for future growth. */
-	void (*reserved[31])(void);
+	void (*reserved[30])(void);
 };
 
 struct runtime_interfaces {
@@ -506,6 +526,13 @@ struct runtime_interfaces {
 	 */
 	uint64_t (*get_ipoll_events)(void);
 
+	/** 
+	 * @brief Receive an async notification from firmware
+	 * @param[in]    len	length of notification data
+	 * @param[in]    data	notification data
+	 */
+	void (*firmware_notify)(uint64_t len, void *data);
+
 	/* Reserve some space for future growth. */
-	void (*reserved[28])(void);
+	void (*reserved[27])(void);
 };

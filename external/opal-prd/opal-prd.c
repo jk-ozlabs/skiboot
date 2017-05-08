@@ -660,6 +660,12 @@ uint64_t hservice_get_interface_capabilities(uint64_t set)
 	return 0;
 }
 
+uint64_t hservice_firmware_request(uint64_t req_len, void *req,
+		uint64_t *resp_len, void *resp)
+{
+	return -1;
+}
+
 int hservices_init(struct opal_prd_ctx *ctx, void *code)
 {
 	uint64_t *s, *d;
