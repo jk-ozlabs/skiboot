@@ -259,6 +259,7 @@ extern int call_mfg_htmgt_pass_thru(uint16_t i_cmdLength, uint8_t *i_cmdData,
 extern int call_apply_attr_override(uint8_t *i_data, size_t size);
 extern int call_run_command(int argc, const char **argv, char **o_outString);
 extern int call_get_ipoll_events(void);
+extern int call_firmware_notify(uint64_t len, void *data);
 
 void hservice_puts(const char *str)
 {
@@ -1216,6 +1217,27 @@ static int handle_msg_occ_reset(struct opal_prd_ctx *ctx,
 	return 0;
 }
 
+static int handle_msg_firmware_notify(struct opal_prd_ctx *ctx,
+		struct opal_prd_msg *msg)
+{
+	uint64_t len;
+	void *buf;
+
+	len = be64toh(msg->fw_notify.len);
+	buf = msg->fw_notify.data;
+
+	pr_debug("FW: firmware notification, %ld bytes", len);
+
+	if (!hservice_runtime->firmware_notify) {
+		pr_log_nocall("firmware_notify");
+		return -1;
+	}
+
+	call_firmware_notify(len, buf);
+
+	return 0;
+}
+
 static int handle_prd_msg(struct opal_prd_ctx *ctx, struct opal_prd_msg *msg)
 {
 	int rc = -1;
@@ -1229,6 +1251,9 @@ static int handle_prd_msg(struct opal_prd_ctx *ctx, struct opal_prd_msg *msg)
 		break;
 	case OPAL_PRD_MSG_TYPE_OCC_ERROR:
 		rc = handle_msg_occ_error(ctx, msg);
+		break;
+	case OPAL_PRD_MSG_TYPE_FIRMWARE_NOTIFY:
+		rc = handle_msg_firmware_notify(ctx, msg);
 		break;
 	default:
 		pr_log(LOG_WARNING, "Invalid incoming message type 0x%x",
