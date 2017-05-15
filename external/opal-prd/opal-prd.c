@@ -50,6 +50,8 @@
 #include <opal-api.h>
 #include <types.h>
 
+#include <ccan/list/list.h>
+
 #include "opal-prd.h"
 #include "hostboot-interface.h"
 #include "module.h"
@@ -63,6 +65,11 @@ struct prd_range {
 	void			*buf;
 	bool			multiple;
 	uint32_t		instance;
+};
+
+struct prd_msgq_item {
+	struct list_node	list;
+	struct opal_prd_msg	msg;
 };
 
 struct opal_prd_ctx {
@@ -80,6 +87,7 @@ struct opal_prd_ctx {
 	char			*hbrt_file_name;
 	bool			use_syslog;
 	bool			expert_mode;
+	struct list_head	msgq;
 	struct opal_prd_msg	*msg;
 	size_t			msg_alloc_len;
 	void			(*vlog)(int, const char *, va_list);
@@ -113,6 +121,8 @@ static const char *hbrt_code_region_name = "ibm,hbrt-code-image";
 static const int opal_prd_version = 1;
 static uint64_t opal_prd_ipoll = 0xf000000000000000;
 
+static const int max_msgq_len = 16;
+
 static const char *ipmi_devnode = "/dev/ipmi0";
 static const int ipmi_timeout_ms = 5000;
 
@@ -141,6 +151,8 @@ struct func_desc {
 	void *addr;
 	void *toc;
 } hbrt_entry;
+
+static int read_prd_msg(struct opal_prd_ctx *ctx);
 
 static struct prd_range *find_range(const char *name, uint32_t instance)
 {
@@ -666,7 +678,85 @@ uint64_t hservice_get_interface_capabilities(uint64_t set)
 uint64_t hservice_firmware_request(uint64_t req_len, void *req,
 		uint64_t *resp_len, void *resp)
 {
-	return -1;
+	struct opal_prd_msg *msg = ctx->msg;
+	size_t size;
+	int rc, n;
+
+	pr_log(LOG_DEBUG, "HBRT: firmware request: %d bytes req, %d bytes resp",
+			req_len, *resp_len);
+
+	/* sanity check for potential overflows */
+	if (req_len > 0xffff || *resp_len > 0xffff)
+		return -1;
+
+	size = sizeof(msg->hdr) + sizeof(msg->token) +
+		sizeof(msg->fw_req) + req_len;
+
+	/* we need the entire message to fit within the 2-byte size field */
+	if (size > 0xffff)
+		return -1;
+
+	/* variable sized message, so we may need to expand our buffer */
+	if (size > ctx->msg_alloc_len) {
+		ctx->msg_alloc_len = size;
+		ctx->msg = msg = realloc(ctx->msg, size);
+	}
+
+	memset(msg, 0, size);
+
+	/* construct request message... */
+	msg->hdr.type = OPAL_PRD_MSG_TYPE_FIRMWARE_REQUEST;
+	msg->hdr.size = htobe16(size);
+	msg->fw_req.req_len = htobe16(req_len);
+	msg->fw_req.resp_len = htobe16(*resp_len);
+	memcpy(msg->fw_req.data, req, req_len);
+
+	/* ... and send to firmware */
+	rc = write(ctx->fd, msg, size);
+	if (rc != size) {
+		pr_log(LOG_WARNING,
+			"FW: Failed to send FIRMWARE_REQUEST message: %m");
+		return -1;
+	}
+
+	/* We have an "inner" poll loop here, as we want to ensure that the
+	 * next entry into HBRT is the return from this function. So, only
+	 * read from the prd fd, and queue anything that isn't a response
+	 * to this request
+	 */
+	n = 0;
+	for (;;) {
+		struct prd_msgq_item *item;
+
+		rc = read_prd_msg(ctx);
+		if (rc)
+			return -1;
+
+		msg = ctx->msg;
+		if (msg->hdr.type == OPAL_PRD_MSG_TYPE_FIRMWARE_RESPONSE) {
+			size = be16toh(msg->fw_resp.len);
+			if (size > *resp_len)
+				return -1;
+
+			/* success! a valid response that fits into HBRT's
+			 * resp buffer */
+			memcpy(resp, msg->fw_resp.data, size);
+			*resp_len = size;
+			return 0;
+		}
+
+		/* not a response? queue up for later consumption */
+		if (++n > max_msgq_len) {
+			pr_log(LOG_ERR,
+				"FW: too many messages queued (%d) while "
+				"waiting for FIRMWARE_RESPONSE", n);
+			return -1;
+		}
+		size = be16toh(msg->hdr.size);
+		item = malloc(sizeof(*item) + size);
+		memcpy(&item->msg, msg, size);
+		list_add_tail(&ctx->msgq, &item->list);
+	}
 }
 
 int hservices_init(struct opal_prd_ctx *ctx, void *code)
@@ -1263,6 +1353,24 @@ static int handle_prd_msg(struct opal_prd_ctx *ctx, struct opal_prd_msg *msg)
 	return rc;
 }
 
+#define list_for_each_pop(h, i, type, member) \
+	for (i = list_pop((h), type, member); \
+		i; \
+		i = list_pop((h), type, member))
+
+
+static int process_msgq(struct opal_prd_ctx *ctx)
+{
+	struct prd_msgq_item *item;
+
+	list_for_each_pop(&ctx->msgq, item, struct prd_msgq_item, list) {
+		handle_prd_msg(ctx, &item->msg);
+		free(item);
+	}
+
+	return 0;
+}
+
 static int read_prd_msg(struct opal_prd_ctx *ctx)
 {
 	struct opal_prd_msg *msg;
@@ -1592,6 +1700,9 @@ static int run_attn_loop(struct opal_prd_ctx *ctx)
 	pollfds[1].events = POLLIN | POLLERR;
 
 	for (;;) {
+		/* run through any pending messages */
+		process_msgq(ctx);
+
 		rc = poll(pollfds, 2, -1);
 		if (rc < 0) {
 			pr_log(LOG_ERR, "FW: event poll failed: %m");
@@ -1677,6 +1788,8 @@ static int run_prd_daemon(struct opal_prd_ctx *ctx)
 	/* set up our message buffer */
 	ctx->msg_alloc_len = sizeof(*ctx->msg);
 	ctx->msg = malloc(ctx->msg_alloc_len);
+
+	list_head_init(&ctx->msgq);
 
 	i2c_init();
 
