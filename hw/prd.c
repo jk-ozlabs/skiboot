@@ -345,7 +345,7 @@ static int prd_msg_handle_firmware_req(struct opal_prd_msg *msg)
 	fw_req = (struct prd_fw_msg *)msg->fw_req.data;
 
 	/* do we have a full firmware message? */
-	if (fw_req_len < sizeof(struct prd_fw_msg))
+	if (fw_req_len < PRD_FW_MSG_BASE_SIZE)
 		return -EINVAL;
 
 	/* does the total (outer) PRD message len provide enough data for the

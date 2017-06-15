@@ -26,10 +26,16 @@
 enum {
 	PRD_FW_MSG_TYPE_REQ_NOP = 0,
 	PRD_FW_MSG_TYPE_RESP_NOP = 1,
+	PRD_FW_MSG_TYPE_RESP_GENERIC = 2,
 };
 
 struct prd_fw_msg {
 	__be64		type;
+	union {
+		struct {
+			__be64	status;
+		} resp_generic;
+	};
 };
 
 #define PRD_FW_MSG_BASE_SIZE	sizeof(__be64)
