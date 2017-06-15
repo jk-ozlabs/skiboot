@@ -334,6 +334,40 @@ static int prd_msg_handle_fini(void)
 	return OPAL_SUCCESS;
 }
 
+static int prd_fw_msg_handle_hcode_update(
+		struct prd_fw_msg *req, unsigned long req_len,
+		struct prd_fw_msg *resp, unsigned long *resp_len)
+{
+	struct proc_chip *chip;
+	uint64_t resp_rc;
+
+	if (req_len < PRD_FW_MSG_BASE_SIZE + sizeof(req->req_hcode_update))
+		return -EINVAL;
+
+	if (*resp_len < PRD_FW_MSG_BASE_SIZE + sizeof(resp->resp_generic))
+		return -EINVAL;
+
+	chip = get_chip(be64_to_cpu(req->req_hcode_update.chip_id));
+	if (!chip) {
+		resp_rc = ENOENT;
+		goto out;
+
+	}
+
+	resp_rc = p9_stop_save_scom((void *)chip->homer_base,
+			be64_to_cpu(req->req_hcode_update.scom_addr),
+			be64_to_cpu(req->req_hcode_update.scom_data),
+			be32_to_cpu(req->req_hcode_update.operation),
+			be32_to_cpu(req->req_hcode_update.section));
+
+out:
+	resp->resp_generic.status = cpu_to_be64(resp_rc);
+	resp->type = cpu_to_be64(PRD_FW_MSG_TYPE_RESP_GENERIC);
+	*resp_len = cpu_to_be64(PRD_FW_MSG_BASE_SIZE +
+			sizeof(resp->resp_generic));
+	return 0;
+}
+
 static int prd_msg_handle_firmware_req(struct opal_prd_msg *msg)
 {
 	unsigned long fw_req_len, fw_resp_len;
@@ -374,6 +408,10 @@ static int prd_msg_handle_firmware_req(struct opal_prd_msg *msg)
 		prd_msg->fw_resp.len = cpu_to_be64(PRD_FW_MSG_BASE_SIZE);
 		prd_msg->hdr.size = cpu_to_be16(sizeof(*prd_msg));
 		rc = 0;
+		break;
+	case PRD_FW_MSG_TYPE_REQ_HCODE_UPDATE:
+		rc = prd_fw_msg_handle_hcode_update(fw_req, fw_req_len,
+				fw_resp, &fw_resp_len);
 		break;
 	default:
 		rc = -ENOSYS;

@@ -27,6 +27,7 @@ enum {
 	PRD_FW_MSG_TYPE_REQ_NOP = 0,
 	PRD_FW_MSG_TYPE_RESP_NOP = 1,
 	PRD_FW_MSG_TYPE_RESP_GENERIC = 2,
+	PRD_FW_MSG_TYPE_REQ_HCODE_UPDATE = 3,
 };
 
 struct prd_fw_msg {
@@ -35,6 +36,13 @@ struct prd_fw_msg {
 		struct {
 			__be64	status;
 		} resp_generic;
+		struct {
+			__be64	chip_id;
+			__be32	section;
+			__be32	operation;
+			__be64	scom_addr;
+			__be64	scom_data;
+		} req_hcode_update;
 	};
 };
 
