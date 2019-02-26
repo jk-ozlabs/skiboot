@@ -221,6 +221,14 @@ include $(SRC)/ccan/Makefile.inc
 include $(SRC)/$(DEVSRC)/Makefile.inc
 include $(SRC)/libstb/Makefile.inc
 
+LIBMCTP_BINDINGS=
+include $(SRC)/libmctp/Makefile.inc
+SUBDIRS += libmctp
+$(LIBMCTP): CPPFLAGS += -DMCTP_LOG_CUSTOM -DMCTP_NO_DEFAULT_ALLOC
+$(LIBMCTP):
+	$(call Q,AR, $(AR) rcsTPD $@ $^, $@)
+
+
 # hack for travis-ci and coverity
 gard:
 	(cd external/gard; CROSS_COMPILE="" CFLAGS="$(HOSTCFLAGS) $(HOSTGCOVCFLAGS)" make)
@@ -235,7 +243,7 @@ all: $(SUBDIRS) $(TARGET).lid $(TARGET).lid.xz $(TARGET).map extract-gcov
 all: $(TARGET).lid.stb $(TARGET).lid.xz.stb
 
 OBJS := $(ASM) $(CORE) $(HW) $(PLATFORMS) $(LIBFDT) $(LIBXZ) $(LIBFLASH) $(LIBSTB)
-OBJS += $(LIBC) $(CCAN) $(DEVSRC_OBJ) $(LIBPORE)
+OBJS += $(LIBC) $(CCAN) $(DEVSRC_OBJ) $(LIBPORE) $(LIBMCTP)
 OBJS_NO_VER = $(OBJS)
 ALL_OBJS = $(OBJS) version.o
 

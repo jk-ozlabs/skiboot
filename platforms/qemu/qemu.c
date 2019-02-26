@@ -18,6 +18,7 @@
 #include <console.h>
 #include <device.h>
 #include <ipmi.h>
+#include <mctp.h>
 
 #include <platforms/astbmc/astbmc.h>
 
@@ -47,6 +48,9 @@ static void qemu_init(void)
 	} else {
 		astbmc_init();
 	}
+	opal_mctp_init();
+
+	mctp_astlpc_init();
 }
 
 DECLARE_PLATFORM(qemu) = {

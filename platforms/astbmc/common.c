@@ -26,6 +26,7 @@
 #include <bt.h>
 #include <errorlog.h>
 #include <lpc.h>
+#include <mctp.h>
 
 #include "astbmc.h"
 
@@ -43,6 +44,11 @@
 #define MBOX_IO_BASE 0x1000
 #define MBOX_IO_COUNT 6
 #define MBOX_LPC_IRQ 9
+
+/* MCTP config */
+#define MCTP_LPC_KCS_BASE	0xca2
+#define MCTP_LPC_MAP_BASE	((1<<28)-(1<<20))
+#define MCTP_LPC_IRQ		11
 
 void astbmc_ext_irq_serirq_cpld(unsigned int chip_id)
 {
@@ -126,6 +132,10 @@ void astbmc_init(void)
 	 */
 	bt_init();
 
+	opal_mctp_init();
+
+	mctp_astlpc_init();
+
 	/* Initialize PNOR/NVRAM */
 	pnor_init();
 
@@ -201,6 +211,34 @@ static void astbmc_fixup_dt_bt(struct dt_node *lpc)
 
 	dt_add_property_cells(bt, "interrupts", BT_LPC_IRQ);
 	dt_add_property_cells(bt, "interrupt-parent", lpc->phandle);
+}
+
+static void astbmc_fixup_dt_mctp(struct dt_node *lpc)
+{
+	struct dt_node *np;
+	char namebuf[32];
+
+	dt_for_each_child(lpc, np) {
+		if (dt_node_is_compatible(np, "openbmc,mctp-lpc"))
+			return;
+	}
+
+	snprintf(namebuf, sizeof(namebuf), "mctp@i%x", MCTP_LPC_KCS_BASE);
+	np = dt_new(lpc, namebuf);
+
+	dt_add_property_cells(np, "reg",
+			      1 /* IO space */, MCTP_LPC_KCS_BASE, 8,
+			      2 /* FW space */, MCTP_LPC_MAP_BASE, 0x1000);
+
+	dt_add_property_strings(np, "compatible", "openbmc,mctp-lpc");
+
+	/* Mark it as reserved to avoid Linux trying to claim it */
+	dt_add_property_strings(np, "status", "reserved");
+
+	dt_add_property_cells(np, "interrupts", MCTP_LPC_IRQ);
+	dt_add_property_cells(np, "interrupt-parent", lpc->phandle);
+
+	prlog(PR_ERR, "added MCTP node, irq %d\n", MCTP_LPC_IRQ);
 }
 
 static void astbmc_fixup_dt_mbox(struct dt_node *lpc)
@@ -339,6 +377,9 @@ static void astbmc_fixup_dt(void)
 
 	/* MBOX is not in HB */
 	astbmc_fixup_dt_mbox(primary_lpc);
+
+	/* MCTP channel is not in HB */
+	astbmc_fixup_dt_mctp(primary_lpc);
 
 	/* The pel logging code needs a system-id property to work so
 	   make sure we have one. */

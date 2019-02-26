@@ -86,5 +86,12 @@
  */
 #define DISABLE_CON_PENDING_EVT	1
 
+/* libmctp config */
+#define MCTP_LOG_ERR		3
+#define MCTP_LOG_WARNING	4
+#define MCTP_LOG_NOTICE		5
+#define MCTP_LOG_INFO		6
+#define MCTP_LOG_DEBUG		7
+
 #endif /* __CONFIG_H */
 
